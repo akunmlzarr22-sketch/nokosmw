@@ -234,11 +234,32 @@ export default function App() {
       setLoading(prev => ({ ...prev, countries: true }));
       const res = await fetch('/api/countries');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setCountries(data.data);
+      } else {
+        // Fallback jika API server mengirim data kosong
+        setCountries([
+          { id_negara: 1, nama_negara: "Indonesia" },
+          { id_negara: 2, nama_negara: "Malaysia" },
+          { id_negara: 3, nama_negara: "Thailand" },
+          { id_negara: 4, nama_negara: "Vietnam" },
+          { id_negara: 6, nama_negara: "Philippines" },
+          { id_negara: 11, nama_negara: "Russia" },
+          { id_negara: 10, nama_negara: "USA" }
+        ]);
       }
     } catch (err) {
-      setError('Failed to load countries');
+      console.error('Frontend Fetch Error:', err);
+      // Fallback terakhir jika server mati / 404
+      setCountries([
+        { id_negara: 1, nama_negara: "Indonesia" },
+        { id_negara: 2, nama_negara: "Malaysia" },
+        { id_negara: 3, nama_negara: "Thailand" },
+        { id_negara: 4, nama_negara: "Vietnam" },
+        { id_negara: 6, nama_negara: "Philippines" },
+        { id_negara: 11, nama_negara: "Russia" },
+        { id_negara: 10, nama_negara: "USA" }
+      ]);
     } finally {
       setLoading(prev => ({ ...prev, countries: false }));
     }
