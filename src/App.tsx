@@ -338,7 +338,7 @@ export default function App() {
       });
 
       const waNumber = '6283845890648';
-      const message = `Halo Admin, saya ingin topup saldo di NOKOSMW.COM.\n\nDetail Akun:\nEmail: ${user.email}\nNominal: Rp ${topupAmount.toLocaleString()}\n\nMohon bantuannya untuk proses saldonya. Terima kasih.`;
+      const message = `Halo Admin, saya ingin topup saldo di NOKOSMW.MY.ID.\n\nDetail Akun:\nEmail: ${user.email}\nNominal: Rp ${topupAmount.toLocaleString()}\n\nMohon bantuannya untuk proses saldonya. Terima kasih.`;
       
       setShowTopup(false);
       window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
@@ -571,7 +571,7 @@ export default function App() {
             </div>
 
             <div className="text-center">
-              <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Powered by MWSTORE.COM</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Powered by NOKOSMW.MY.ID</p>
             </div>
           </div>
         </motion.div>
