@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and balance information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "balance": { "type": "number" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "balance", "createdAt"]
+    },
+    "TopupRequest": {
+      "title": "TopupRequest",
+      "description": "Manual balance top-up request",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "amount", "status", "timestamp"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Virtual number order history",
+      "type": "object",
+      "properties": {
+        "order_id": { "type": "number" },
+        "uid": { "type": "string" },
+        "number": { "type": "string" },
+        "service_name": { "type": "string" },
+        "country_name": { "type": "string" },
+        "operator": { "type": "string" },
+        "price": { "type": "number" },
+        "otp": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed", "cancelled"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["order_id", "uid", "number", "service_name", "price", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user balance and profile"
+    },
+    "/topup_requests/{requestId}": {
+      "schema": "TopupRequest",
+      "description": "Queue for admin to approve balances"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Order records linked to user"
+    }
+  }
+}
