@@ -54,7 +54,7 @@ async function startServer() {
         countriesArray = rawData;
       } else if (rawData && typeof rawData === 'object') {
         // Jika data dibungkus dalam object (misal: { data: [...] })
-        countriesArray = rawData.data || Object.values(rawData).filter(v => typeof v === 'object' && v.id_negara);
+        countriesArray = rawData.data || Object.values(rawData).filter(v => typeof v === 'object' && v !== null && (v as any).id_negara);
       }
 
       const formattedCountries = countriesArray.map((c: any) => ({

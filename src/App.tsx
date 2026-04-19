@@ -16,7 +16,9 @@ import {
   Info,
   LogIn,
   LogOut,
-  PlusCircle
+  PlusCircle,
+  Menu,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
@@ -222,11 +224,17 @@ export default function App() {
   const [showTopup, setShowTopup] = useState(false);
   const [topupAmount, setTopupAmount] = useState<number>(10000);
   const [countrySearch, setCountrySearch] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // --- API & Firebase Calls ---
   
   const filteredCountries = countries.filter(c => 
     c.nama_negara.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+
+  const filteredServices = (Object.values(services) as Service[]).filter(s => 
+    s.layanan.toLowerCase().includes(serviceSearch.toLowerCase())
   );
 
   const fetchCountries = async () => {
@@ -320,7 +328,7 @@ export default function App() {
     try {
       setLoading(prev => ({ ...prev, topup: true }));
       
-      // Save topup request for admin to see
+      // Simpan permintaan top up ke database agar admin bisa cek
       await addDoc(collection(db, 'topup_requests'), {
         uid: user.uid,
         email: user.email,
@@ -329,15 +337,14 @@ export default function App() {
         timestamp: serverTimestamp()
       });
 
-      const waNumber = (process.env.VITE_WHATSAPP_ADMIN || '6283845890648').replace(/\D/g, '');
-      const message = `Halo Admin, saya ingin topup saldo di NOKOSMW.COM.\n\nDetail Akun:\nEmail: ${user.email}\nNominal: Rp ${topupAmount.toLocaleString()}\n\nStatus: Menunggu Persetujuan.`;
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+      const waNumber = '6283845890648';
+      const message = `Halo Admin, saya ingin topup saldo di NOKOSMW.COM.\n\nDetail Akun:\nEmail: ${user.email}\nNominal: Rp ${topupAmount.toLocaleString()}\n\nMohon bantuannya untuk proses saldonya. Terima kasih.`;
       
       setShowTopup(false);
-      alert('Permintaan top up telah dikirim! Silakan konfirmasi melalui WhatsApp.');
+      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
     } catch (err) {
       console.error(err);
-      setError('Gagal mengirim permintaan top up.');
+      setError('Gagal mengirim permintaan top up ke database.');
     } finally {
       setLoading(prev => ({ ...prev, topup: false }));
     }
@@ -488,40 +495,171 @@ export default function App() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen w-full bg-[#f0f2f5] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-white"
+        >
+          <div className="p-8 space-y-8">
+            <div className="text-center space-y-4">
+               {/* New Stylized SVG Logo */}
+               <div className="w-24 h-24 mx-auto flex items-center justify-center relative">
+                 <div className="absolute inset-0 bg-mw-gradient rounded-full blur-2xl opacity-20 animate-pulse"></div>
+                 <svg viewBox="0 0 100 100" className="w-full h-full relative z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                   <defs>
+                     <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                       <stop offset="0%" stopColor="#8b5cf6" />
+                       <stop offset="50%" stopColor="#f97316" />
+                       <stop offset="100%" stopColor="#fbbf24" />
+                     </linearGradient>
+                   </defs>
+                   <path 
+                     d="M20 70 L35 30 L50 70 L65 30 L80 70" 
+                     stroke="url(#logoGrad)" 
+                     strokeWidth="14" 
+                     strokeLinecap="round" 
+                     strokeLinejoin="round"
+                   />
+                 </svg>
+               </div>
+               
+               <div className="space-y-1">
+                 <h3 className="text-4xl font-black text-gradient italic tracking-tighter">MW STORE</h3>
+                 <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Premium Virtual Number</p>
+               </div>
+            </div>
+
+            <div className="space-y-4">
+               <button 
+                 onClick={login}
+                 className="w-full py-3.5 border border-[#e2e8f0] rounded-xl flex items-center justify-center gap-3 font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+               >
+                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5" />
+                 LOGIN GOOGLE (USER)
+               </button>
+
+               <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
+                  <div className="relative flex justify-center text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-[#ffffff] px-2">Atau Panel Admin</div>
+               </div>
+
+               <div className="space-y-3">
+                  <input 
+                    type="email" 
+                    placeholder="Email Admin"
+                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-blue-400 text-sm"
+                    value={loginEmailInput}
+                    onChange={(e) => setLoginEmailInput(e.target.value)}
+                  />
+                  <input 
+                    type="password" 
+                    placeholder="Password Admin"
+                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-blue-400 text-sm"
+                    value={loginPassInput}
+                    onChange={(e) => setLoginPassInput(e.target.value)}
+                  />
+                  <button 
+                    onClick={() => loginEmail(loginEmailInput, loginPassInput)}
+                    className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl font-bold hover:bg-black transition-colors"
+                  >
+                    MASUK ADMIN PANEL
+                  </button>
+               </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Powered by MWSTORE.COM</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex bg-[#f0f2f5] text-[#1e293b] font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-[14px] h-screen overflow-hidden">
+    <div className="flex bg-[#f0f2f5] text-[#1e293b] font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-[14px] h-screen overflow-hidden relative">
+      {/* Sidebar Overlay for Mobile */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 z-[40] lg:hidden backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
-      <aside className="w-[220px] bg-[#1e293b] text-white p-5 flex flex-col h-full shrink-0">
-        <h1 className="text-[18px] mb-8 tracking-[1px] text-[#3b82f6] font-extrabold uppercase">
-          NOKOSMW.COM
-        </h1>
+      <aside className={`
+        fixed inset-y-0 left-0 z-[50] w-[220px] bg-[#1e293b] text-white p-5 flex flex-col h-full shrink-0
+        transition-transform duration-300 lg:relative lg:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-slate-100 p-1">
+              <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path 
+                  d="M20 70 L35 30 L50 70 L65 30 L80 70" 
+                  stroke="url(#logoGrad)" 
+                  strokeWidth="16" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <h1 className="text-[18px] tracking-[-1px] font-black text-gradient italic uppercase">
+              MW STORE
+            </h1>
+          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-1 text-slate-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
         
         <div className="space-y-1">
-          <div 
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-colors ${activeTab === 'dashboard' ? 'bg-[#3b82f6]' : 'hover:bg-white/10 text-slate-400'}`}
-          >
+            <div 
+              onClick={() => {
+                setActiveTab('dashboard');
+                setIsSidebarOpen(false);
+              }}
+              className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === 'dashboard' ? 'bg-mw-gradient shadow-lg shadow-mw-purple/20 text-white' : 'hover:bg-white/10 text-slate-400'}`}
+            >
             <ShoppingCart size={18} />
             <span className="font-medium">Dashboard</span>
           </div>
           <div 
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-colors ${activeTab === 'history' ? 'bg-[#3b82f6]' : 'hover:bg-white/10 text-slate-400'}`}
+            onClick={() => {
+              setActiveTab('history');
+              setIsSidebarOpen(false);
+            }}
+            className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === 'history' ? 'bg-mw-gradient shadow-lg shadow-mw-purple/20 text-white' : 'hover:bg-white/10 text-slate-400'}`}
           >
             <History size={18} />
             <span className="font-medium">Riwayat</span>
           </div>
           {profile?.role === 'admin' && (
             <div 
-              onClick={() => setActiveTab('admin')}
-              className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-colors ${activeTab === 'admin' ? 'bg-[#3b82f6]' : 'hover:bg-white/10 text-slate-400'}`}
+              onClick={() => {
+                setActiveTab('admin');
+                setIsSidebarOpen(false);
+              }}
+              className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === 'admin' ? 'bg-mw-gradient shadow-lg shadow-mw-purple/20 text-white' : 'hover:bg-white/10 text-slate-400'}`}
             >
               <Cpu size={18} />
               <span className="font-medium">Admin Panel</span>
             </div>
           )}
           <button 
-            onClick={() => setShowTopup(true)}
+            onClick={() => {
+              setShowTopup(true);
+              setIsSidebarOpen(false);
+            }}
             className="w-full flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400 text-left"
           >
             <Wallet size={18} />
@@ -530,13 +668,34 @@ export default function App() {
         </div>
 
         <div className="mt-auto space-y-1">
+          <a 
+            href="https://wa.me/6283845890648" 
+            target="_blank" 
+            rel="noreferrer"
+            className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400"
+          >
+            <MessageSquare size={18} />
+            <span className="font-medium">Hubungi Admin</span>
+          </a>
+          <a 
+            href="https://whatsapp.com/channel/0029Vb7FFLl8KMqgTJlul03P" 
+            target="_blank" 
+            rel="noreferrer"
+            className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400"
+          >
+            <PlusCircle size={18} />
+            <span className="font-medium">Saluran WhatsApp</span>
+          </a>
           <div className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400">
             <Info size={18} />
             <span className="font-medium">API Docs</span>
           </div>
           {user ? (
             <button 
-              onClick={logout}
+              onClick={() => {
+                logout();
+                setIsSidebarOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 p-3 rounded-lg hover:bg-red-500/10 cursor-pointer transition-colors text-red-400 text-left"
             >
               <LogOut size={18} />
@@ -557,9 +716,17 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Header */}
-        <header className="h-[60px] bg-white border-b border-[#e2e8f0] flex items-center justify-between px-[30px] shrink-0">
-          <div className="font-semibold text-[16px]">
-            {user ? `Selamat Datang, ${user.displayName || 'User'}` : 'Silakan Masuk Untuk Melanjutkan'}
+        <header className="h-[60px] bg-white border-b border-[#e2e8f0] flex items-center justify-between px-4 lg:px-[30px] shrink-0">
+          <div className="flex items-center gap-3">
+             <button 
+               onClick={() => setIsSidebarOpen(true)}
+               className="lg:hidden p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+             >
+               <Menu size={20} />
+             </button>
+             <div className="font-semibold text-sm lg:text-[16px] truncate max-w-[150px] sm:max-w-none">
+               {user ? `Selamat Datang, ${user.displayName || 'User'}` : 'Silakan Masuk Untuk Melanjutkan'}
+             </div>
           </div>
           <div className="flex items-center gap-3">
             {profile && (
@@ -582,24 +749,12 @@ export default function App() {
 
         {/* Scrollable Context Area */}
         <div className="p-5 flex-1 min-h-0 overflow-y-auto space-y-5">
-          {!user ? (
-             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 bg-white rounded-3xl border border-dashed border-gray-300">
-                <div className="p-4 bg-blue-50 rounded-full text-blue-600">
-                  <Phone size={48} />
-                </div>
-                <h2 className="text-2xl font-bold">Akses Terbatas</h2>
-                <p className="text-slate-500 max-w-sm">
-                  Silakan masuk menggunakan akun Google atau Admin untuk melakukan pembelian nomor virtual dan melihat riwayat pesanan Anda.
-                </p>
-                <button 
-                  onClick={() => setShowLoginModal(true)}
-                  className="px-8 py-3 bg-[#3b82f6] text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-                >
-                  Masuk Sekarang
-                </button>
-             </div>
-          ) : activeTab === 'admin' && profile?.role === 'admin' ? (
+          {activeTab === 'admin' && profile?.role === 'admin' ? (
             <AdminPanel />
+          ) : activeTab === 'history' ? (
+            <div className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden">
+               <div className="p-10 text-center text-slate-400 italic">Fitur Riwayat sedang dalam pengembangan.</div>
+            </div>
           ) : (
             <>
               {/* Error Alert */}
@@ -653,32 +808,49 @@ export default function App() {
                              <Loader2 size={14} className="animate-spin" />
                              <span className="text-xs">Memuat negara...</span>
                           </div>
-                        ) : filteredCountries.length > 0 ? (
-                          filteredCountries.map(c => (
-                            <div 
-                              key={c.id_negara}
-                              onClick={() => {
-                                setSelectedCountry(c);
-                                setCountrySearch('');
-                              }}
-                              className={`px-3 py-2.5 text-sm cursor-pointer transition-all flex items-center justify-between group ${
-                                selectedCountry?.id_negara === c.id_negara 
-                                ? 'bg-blue-50 text-blue-700 font-bold' 
-                                : 'hover:bg-slate-50 text-slate-600'
-                              }`}
-                            >
-                              <span className="uppercase tracking-tight">{c.nama_negara}</span>
-                              {selectedCountry?.id_negara === c.id_negara && <CheckCircle2 size={14} className="text-blue-600" />}
-                            </div>
-                          ))
+                        ) : countrySearch.length > 0 ? (
+                          filteredCountries.length > 0 ? (
+                            filteredCountries.map(c => (
+                              <div 
+                                key={c.id_negara}
+                                onClick={() => {
+                                  setSelectedCountry(c);
+                                  setCountrySearch('');
+                                }}
+                                className={`px-3 py-2.5 text-sm cursor-pointer transition-all flex items-center justify-between group ${
+                                  selectedCountry?.id_negara === c.id_negara 
+                                  ? 'bg-blue-50 text-blue-700 font-bold' 
+                                  : 'hover:bg-slate-50 text-slate-600'
+                                }`}
+                              >
+                                <span className="uppercase tracking-tight">{c.nama_negara}</span>
+                                {selectedCountry?.id_negara === c.id_negara && <CheckCircle2 size={14} className="text-blue-600" />}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center text-xs text-slate-400 italic">Negara tidak ditemukan</div>
+                          )
                         ) : (
-                          <div className="p-4 text-center text-xs text-slate-400 italic">Negara tidak ditemukan</div>
+                          <div className="p-4 text-center text-xs text-slate-400 italic">Ketik nama negara untuk mencari...</div>
                         )}
                       </div>
                     </div>
 
                       <div className="space-y-1.5">
-                        <label className="block text-[11px] uppercase text-[#64748b] font-bold tracking-wider">Layanan</label>
+                        <label className="block text-[11px] uppercase text-[#64748b] font-bold tracking-wider">Cari Layanan</label>
+                        <div className="relative group/search">
+                          <ShoppingCart size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-blue-500 transition-colors" />
+                          <input 
+                            type="text"
+                            placeholder="Contoh: WhatsApp, Telegram..."
+                            className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-md outline-none bg-white focus:border-[#3b82f6] text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                            disabled={!selectedCountry || loading.services}
+                            value={serviceSearch}
+                            onChange={(e) => setServiceSearch(e.target.value)}
+                          />
+                        </div>
+                        
+                        <label className="block text-[11px] uppercase text-[#64748b] font-bold tracking-wider mt-2">Pilih Layanan</label>
                         <select 
                           className="w-full p-2.5 border border-[#e2e8f0] rounded-md outline-none bg-white focus:border-[#3b82f6] disabled:bg-gray-50 text-sm"
                           disabled={!selectedCountry || loading.services}
@@ -686,7 +858,7 @@ export default function App() {
                           onChange={(e) => setSelectedServiceKey(e.target.value)}
                         >
                           <option value="" disabled>{loading.services ? 'Loading...' : 'Pilih Layanan'}</option>
-                          {Object.values(services).map((service: Service) => (
+                          {filteredServices.map((service: Service) => (
                             <option key={service.key} value={service.key}>
                               {service.layanan.toUpperCase()} - Rp {service.harga.toLocaleString()} (Stok: {service.stok})
                             </option>

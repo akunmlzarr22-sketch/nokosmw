@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+@theme {
+  --color-mw-purple: #8b5cf6;
+  --color-mw-orange: #f97316;
+  --color-mw-yellow: #fbbf24;
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-[#8b5cf6] via-[#f97316] to-[#fbbf24];
+  }
+  .bg-mw-gradient {
+    @apply bg-linear-to-r from-[#8b5cf6] to-[#f97316];
+  }
+}
