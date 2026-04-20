@@ -209,6 +209,7 @@ function AdminPanel() {
 export default function App() {
   const { user, profile, login, loginEmail, logout, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'admin'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginEmailInput, setLoginEmailInput] = useState('');
   const [loginPassInput, setLoginPassInput] = useState('');
@@ -225,7 +226,6 @@ export default function App() {
   const [topupAmount, setTopupAmount] = useState<number>(10000);
   const [countrySearch, setCountrySearch] = useState('');
   const [serviceSearch, setServiceSearch] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // --- API & Firebase Calls ---
   
@@ -242,32 +242,11 @@ export default function App() {
       setLoading(prev => ({ ...prev, countries: true }));
       const res = await fetch('/api/countries');
       const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      if (data.success) {
         setCountries(data.data);
-      } else {
-        // Fallback jika API server mengirim data kosong
-        setCountries([
-          { id_negara: 1, nama_negara: "Indonesia" },
-          { id_negara: 2, nama_negara: "Malaysia" },
-          { id_negara: 3, nama_negara: "Thailand" },
-          { id_negara: 4, nama_negara: "Vietnam" },
-          { id_negara: 6, nama_negara: "Philippines" },
-          { id_negara: 11, nama_negara: "Russia" },
-          { id_negara: 10, nama_negara: "USA" }
-        ]);
       }
     } catch (err) {
-      console.error('Frontend Fetch Error:', err);
-      // Fallback terakhir jika server mati / 404
-      setCountries([
-        { id_negara: 1, nama_negara: "Indonesia" },
-        { id_negara: 2, nama_negara: "Malaysia" },
-        { id_negara: 3, nama_negara: "Thailand" },
-        { id_negara: 4, nama_negara: "Vietnam" },
-        { id_negara: 6, nama_negara: "Philippines" },
-        { id_negara: 11, nama_negara: "Russia" },
-        { id_negara: 10, nama_negara: "USA" }
-      ]);
+      setError('Failed to load countries');
     } finally {
       setLoading(prev => ({ ...prev, countries: false }));
     }
@@ -328,7 +307,7 @@ export default function App() {
     try {
       setLoading(prev => ({ ...prev, topup: true }));
       
-      // Simpan permintaan top up ke database agar admin bisa cek
+      // Save topup request for admin to see
       await addDoc(collection(db, 'topup_requests'), {
         uid: user.uid,
         email: user.email,
@@ -338,13 +317,13 @@ export default function App() {
       });
 
       const waNumber = '6283845890648';
-      const message = `Halo Admin, saya ingin topup saldo di NOKOSMW.MY.ID.\n\nDetail Akun:\nEmail: ${user.email}\nNominal: Rp ${topupAmount.toLocaleString()}\n\nMohon bantuannya untuk proses saldonya. Terima kasih.`;
+      const message = `Halo Admin, saya ingin topup saldo di MWSTORE.\n\nDetail Akun:\nEmail: ${user.email}\nNominal: Rp ${topupAmount.toLocaleString()}\n\nStatus: Menunggu Persetujuan.`;
+      window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
       
       setShowTopup(false);
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
     } catch (err) {
       console.error(err);
-      setError('Gagal mengirim permintaan top up ke database.');
+      setError('Gagal mengirim permintaan top up.');
     } finally {
       setLoading(prev => ({ ...prev, topup: false }));
     }
@@ -495,93 +474,9 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen w-full bg-[#f0f2f5] flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-white"
-        >
-          <div className="p-8 space-y-8">
-            <div className="text-center space-y-4">
-               {/* New Stylized SVG Logo */}
-               <div className="w-24 h-24 mx-auto flex items-center justify-center relative">
-                 <div className="absolute inset-0 bg-mw-gradient rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                 <svg viewBox="0 0 100 100" className="w-full h-full relative z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                   <defs>
-                     <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                       <stop offset="0%" stopColor="#8b5cf6" />
-                       <stop offset="50%" stopColor="#f97316" />
-                       <stop offset="100%" stopColor="#fbbf24" />
-                     </linearGradient>
-                   </defs>
-                   <path 
-                     d="M20 70 L35 30 L50 70 L65 30 L80 70" 
-                     stroke="url(#logoGrad)" 
-                     strokeWidth="14" 
-                     strokeLinecap="round" 
-                     strokeLinejoin="round"
-                   />
-                 </svg>
-               </div>
-               
-               <div className="space-y-1">
-                 <h3 className="text-4xl font-black text-gradient italic tracking-tighter">MW STORE</h3>
-                 <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Premium Virtual Number</p>
-               </div>
-            </div>
-
-            <div className="space-y-4">
-               <button 
-                 onClick={login}
-                 className="w-full py-3.5 border border-[#e2e8f0] rounded-xl flex items-center justify-center gap-3 font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-               >
-                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5" />
-                 LOGIN GOOGLE (USER)
-               </button>
-
-               <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
-                  <div className="relative flex justify-center text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-[#ffffff] px-2">Atau Panel Admin</div>
-               </div>
-
-               <div className="space-y-3">
-                  <input 
-                    type="email" 
-                    placeholder="Email Admin"
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-blue-400 text-sm"
-                    value={loginEmailInput}
-                    onChange={(e) => setLoginEmailInput(e.target.value)}
-                  />
-                  <input 
-                    type="password" 
-                    placeholder="Password Admin"
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-blue-400 text-sm"
-                    value={loginPassInput}
-                    onChange={(e) => setLoginPassInput(e.target.value)}
-                  />
-                  <button 
-                    onClick={() => loginEmail(loginEmailInput, loginPassInput)}
-                    className="w-full py-3.5 bg-[#1e293b] text-white rounded-xl font-bold hover:bg-black transition-colors"
-                  >
-                    MASUK ADMIN PANEL
-                  </button>
-               </div>
-            </div>
-
-            <div className="text-center">
-              <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Powered by NOKOSMW.MY.ID</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex bg-[#f0f2f5] text-[#1e293b] font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-[14px] h-screen overflow-hidden relative">
-      {/* Sidebar Overlay for Mobile */}
+      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div 
@@ -589,77 +484,69 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black/50 z-[40] lg:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-[50] w-[220px] bg-[#1e293b] text-white p-5 flex flex-col h-full shrink-0
-        transition-transform duration-300 lg:relative lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        fixed inset-y-0 left-0 z-50 w-[240px] bg-[#1e293b] text-white p-5 flex flex-col h-full shrink-0
+        transition-transform duration-300 ease-in-out lg:relative 
+        ${user ? 'lg:translate-x-0' : 'lg:-translate-x-full lg:hidden'}
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-slate-100 p-1">
-              <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path 
-                  d="M20 70 L35 30 L50 70 L65 30 L80 70" 
-                  stroke="url(#logoGrad)" 
-                  strokeWidth="16" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <h1 className="text-[18px] tracking-[-1px] font-black text-gradient italic uppercase">
-              MW STORE
-            </h1>
+          <div className="flex items-center gap-3">
+             <img 
+               src="https://api.studio.google.com/build/api/v1/files/input_file_0.png" 
+               alt="MWSTORE Logo" 
+               className="h-9 w-auto brightness-110 contrast-125"
+               referrerPolicy="no-referrer"
+               onError={(e) => {
+                 // Fallback if image not found
+                 e.currentTarget.style.display = 'none';
+                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
+               }}
+             />
+             <h1 className="hidden text-[18px] tracking-[1px] text-[#3b82f6] font-extrabold uppercase">
+               MWSTORE
+             </h1>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-1 text-slate-400 hover:text-white">
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-1 hover:bg-white/10 rounded-md text-slate-400"
+          >
             <X size={20} />
           </button>
         </div>
         
         <div className="space-y-1">
-            <div 
-              onClick={() => {
-                setActiveTab('dashboard');
-                setIsSidebarOpen(false);
-              }}
-              className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === 'dashboard' ? 'bg-mw-gradient shadow-lg shadow-mw-purple/20 text-white' : 'hover:bg-white/10 text-slate-400'}`}
-            >
+          <div 
+            onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
+            className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-colors ${activeTab === 'dashboard' ? 'bg-[#3b82f6]' : 'hover:bg-white/10 text-slate-400'}`}
+          >
             <ShoppingCart size={18} />
             <span className="font-medium">Dashboard</span>
           </div>
           <div 
-            onClick={() => {
-              setActiveTab('history');
-              setIsSidebarOpen(false);
-            }}
-            className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === 'history' ? 'bg-mw-gradient shadow-lg shadow-mw-purple/20 text-white' : 'hover:bg-white/10 text-slate-400'}`}
+            onClick={() => { setActiveTab('history'); setIsSidebarOpen(false); }}
+            className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-colors ${activeTab === 'history' ? 'bg-[#3b82f6]' : 'hover:bg-white/10 text-slate-400'}`}
           >
             <History size={18} />
             <span className="font-medium">Riwayat</span>
           </div>
           {profile?.role === 'admin' && (
             <div 
-              onClick={() => {
-                setActiveTab('admin');
-                setIsSidebarOpen(false);
-              }}
-              className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-all duration-300 ${activeTab === 'admin' ? 'bg-mw-gradient shadow-lg shadow-mw-purple/20 text-white' : 'hover:bg-white/10 text-slate-400'}`}
+              onClick={() => { setActiveTab('admin'); setIsSidebarOpen(false); }}
+              className={`flex items-center gap-2.5 p-3 rounded-lg cursor-pointer transition-colors ${activeTab === 'admin' ? 'bg-[#3b82f6]' : 'hover:bg-white/10 text-slate-400'}`}
             >
               <Cpu size={18} />
               <span className="font-medium">Admin Panel</span>
             </div>
           )}
           <button 
-            onClick={() => {
-              setShowTopup(true);
-              setIsSidebarOpen(false);
-            }}
+            onClick={() => { setShowTopup(true); setIsSidebarOpen(false); }}
             className="w-full flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400 text-left"
           >
             <Wallet size={18} />
@@ -672,19 +559,19 @@ export default function App() {
             href="https://wa.me/6283845890648" 
             target="_blank" 
             rel="noreferrer"
-            className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400"
+            className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors text-green-400"
           >
             <MessageSquare size={18} />
-            <span className="font-medium">Hubungi Admin</span>
+            <span className="font-medium">WhatsApp Admin</span>
           </a>
           <a 
             href="https://whatsapp.com/channel/0029Vb7FFLl8KMqgTJlul03P" 
             target="_blank" 
             rel="noreferrer"
-            className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400"
+            className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-blue-500/10 cursor-pointer transition-colors text-blue-400"
           >
-            <PlusCircle size={18} />
-            <span className="font-medium">Saluran WhatsApp</span>
+            <Globe size={18} />
+            <span className="font-medium">Saluran WA</span>
           </a>
           <div className="flex items-center gap-2.5 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-colors text-slate-400">
             <Info size={18} />
@@ -692,10 +579,7 @@ export default function App() {
           </div>
           {user ? (
             <button 
-              onClick={() => {
-                logout();
-                setIsSidebarOpen(false);
-              }}
+              onClick={logout}
               className="w-full flex items-center gap-2.5 p-3 rounded-lg hover:bg-red-500/10 cursor-pointer transition-colors text-red-400 text-left"
             >
               <LogOut size={18} />
@@ -716,19 +600,21 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Header */}
-        <header className="h-[60px] bg-white border-b border-[#e2e8f0] flex items-center justify-between px-4 lg:px-[30px] shrink-0">
+        <header className="h-[60px] bg-white border-b border-[#e2e8f0] flex items-center justify-between px-4 lg:px-[30px] shrink-0 gap-4">
           <div className="flex items-center gap-3">
-             <button 
-               onClick={() => setIsSidebarOpen(true)}
-               className="lg:hidden p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
-             >
-               <Menu size={20} />
-             </button>
-             <div className="font-semibold text-sm lg:text-[16px] truncate max-w-[150px] sm:max-w-none">
-               {user ? `Selamat Datang, ${user.displayName || 'User'}` : 'Silakan Masuk Untuk Melanjutkan'}
-             </div>
+            {user && (
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 hover:bg-slate-50 rounded-lg text-slate-600"
+              >
+                <Menu size={24} />
+              </button>
+            )}
+            <div className="font-bold text-sm lg:text-[16px] truncate">
+              {user ? `Halo, ${user.displayName || 'User'}` : 'Silakan Masuk'}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 lg:gap-3">
             {profile && (
               <div 
                 className={`bg-[#eff6ff] border border-[#bfdbfe] py-1.5 px-4 rounded-md font-bold text-[#3b82f6] ${profile.role === 'admin' ? 'border-purple-200 bg-purple-50 text-purple-600' : ''}`}
@@ -749,12 +635,24 @@ export default function App() {
 
         {/* Scrollable Context Area */}
         <div className="p-5 flex-1 min-h-0 overflow-y-auto space-y-5">
-          {activeTab === 'admin' && profile?.role === 'admin' ? (
+          {!user ? (
+             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 bg-white rounded-3xl border border-dashed border-gray-300">
+                <div className="p-4 bg-blue-50 rounded-full text-blue-600">
+                  <Phone size={48} />
+                </div>
+                <h2 className="text-2xl font-bold">Akses Terbatas</h2>
+                <p className="text-slate-500 max-w-sm">
+                  Silakan masuk menggunakan akun Google atau Admin untuk melakukan pembelian nomor virtual dan melihat riwayat pesanan Anda.
+                </p>
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-8 py-3 bg-[#3b82f6] text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                >
+                  Masuk Sekarang
+                </button>
+             </div>
+          ) : activeTab === 'admin' && profile?.role === 'admin' ? (
             <AdminPanel />
-          ) : activeTab === 'history' ? (
-            <div className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden">
-               <div className="p-10 text-center text-slate-400 italic">Fitur Riwayat sedang dalam pengembangan.</div>
-            </div>
           ) : (
             <>
               {/* Error Alert */}
@@ -778,9 +676,9 @@ export default function App() {
               </AnimatePresence>
 
               {/* Grid Layout */}
-              <div className="grid grid-cols-1 xl:grid-cols-[350px_1fr] gap-5 items-start">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-5 items-start">
                 
-                {/* Left Side */}
+                {/* Left Side (Order Form) */}
                 <div className="flex flex-col gap-5">
                   <section className="bg-white rounded-xl border border-[#e2e8f0] flex flex-col overflow-hidden shadow-sm">
                     <div className="px-5 py-[15px] border-b border-[#e2e8f0] font-bold bg-[#fafafa]">
@@ -808,62 +706,105 @@ export default function App() {
                              <Loader2 size={14} className="animate-spin" />
                              <span className="text-xs">Memuat negara...</span>
                           </div>
-                        ) : countrySearch.length > 0 ? (
-                          filteredCountries.length > 0 ? (
-                            filteredCountries.map(c => (
-                              <div 
-                                key={c.id_negara}
-                                onClick={() => {
-                                  setSelectedCountry(c);
-                                  setCountrySearch('');
-                                }}
-                                className={`px-3 py-2.5 text-sm cursor-pointer transition-all flex items-center justify-between group ${
-                                  selectedCountry?.id_negara === c.id_negara 
-                                  ? 'bg-blue-50 text-blue-700 font-bold' 
-                                  : 'hover:bg-slate-50 text-slate-600'
-                                }`}
-                              >
-                                <span className="uppercase tracking-tight">{c.nama_negara}</span>
-                                {selectedCountry?.id_negara === c.id_negara && <CheckCircle2 size={14} className="text-blue-600" />}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-4 text-center text-xs text-slate-400 italic">Negara tidak ditemukan</div>
-                          )
+                        ) : filteredCountries.length > 0 ? (
+                          filteredCountries.map(c => (
+                            <div 
+                              key={c.id_negara}
+                              onClick={() => {
+                                setSelectedCountry(c);
+                                setCountrySearch('');
+                              }}
+                              className={`px-3 py-2.5 text-sm cursor-pointer transition-all flex items-center justify-between group ${
+                                selectedCountry?.id_negara === c.id_negara 
+                                ? 'bg-blue-50 text-blue-700 font-bold' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              <span className="uppercase tracking-tight">{c.nama_negara}</span>
+                              {selectedCountry?.id_negara === c.id_negara && <CheckCircle2 size={14} className="text-blue-600" />}
+                            </div>
+                          ))
                         ) : (
-                          <div className="p-4 text-center text-xs text-slate-400 italic">Ketik nama negara untuk mencari...</div>
+                          <div className="p-4 text-center text-xs text-slate-400 italic">Negara tidak ditemukan</div>
                         )}
                       </div>
                     </div>
 
                       <div className="space-y-1.5">
-                        <label className="block text-[11px] uppercase text-[#64748b] font-bold tracking-wider">Cari Layanan</label>
-                        <div className="relative group/search">
-                          <ShoppingCart size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-blue-500 transition-colors" />
+                        <label className="block text-[11px] uppercase text-[#64748b] font-bold tracking-wider flex justify-between">
+                          <span>Layanan / Aplikasi</span>
+                          <span className="text-[10px] lowercase font-normal">({Object.keys(services).length} tersedia)</span>
+                        </label>
+                        <div className="relative group/search-service">
+                          <ShoppingCart size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search-service:text-blue-500 transition-colors" />
                           <input 
                             type="text"
-                            placeholder="Contoh: WhatsApp, Telegram..."
-                            className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-md outline-none bg-white focus:border-[#3b82f6] text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                            placeholder="Cari aplikasi (WA, Tele, dll)..."
                             disabled={!selectedCountry || loading.services}
+                            className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-md outline-none bg-white focus:border-[#3b82f6] text-sm disabled:bg-slate-50 disabled:cursor-not-allowed"
                             value={serviceSearch}
                             onChange={(e) => setServiceSearch(e.target.value)}
                           />
                         </div>
                         
-                        <label className="block text-[11px] uppercase text-[#64748b] font-bold tracking-wider mt-2">Pilih Layanan</label>
-                        <select 
-                          className="w-full p-2.5 border border-[#e2e8f0] rounded-md outline-none bg-white focus:border-[#3b82f6] disabled:bg-gray-50 text-sm"
-                          disabled={!selectedCountry || loading.services}
-                          value={selectedServiceKey || ''}
-                          onChange={(e) => setSelectedServiceKey(e.target.value)}
-                        >
-                          <option value="" disabled>{loading.services ? 'Loading...' : 'Pilih Layanan'}</option>
-                          {filteredServices.map((service: Service) => (
-                            <option key={service.key} value={service.key}>
-                              {service.layanan.toUpperCase()} - Rp {service.harga.toLocaleString()} (Stok: {service.stok})
-                            </option>
-                          ))}
-                        </select>
+                        <div className="max-h-[300px] overflow-y-auto border border-[#e2e8f0] rounded-md divide-y divide-slate-50 bg-white shadow-inner custom-scrollbar">
+                          {loading.services ? (
+                            <div className="p-8 flex flex-col items-center justify-center gap-3 text-slate-400">
+                               <Loader2 size={24} className="animate-spin text-blue-500" />
+                               <span className="text-xs font-medium">Mengambil daftar layanan...</span>
+                            </div>
+                          ) : !selectedCountry ? (
+                            <div className="p-8 text-center text-xs text-slate-400 italic flex flex-col items-center gap-2">
+                              <Info size={20} className="text-slate-300" />
+                              Pilih negara terlebih dahulu untuk melihat layanan
+                            </div>
+                          ) : filteredServices.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-px bg-slate-50">
+                              {filteredServices.map((service: Service) => {
+                                const isSelected = selectedServiceKey === service.key;
+                                return (
+                                  <div 
+                                    key={service.key}
+                                    onClick={() => setSelectedServiceKey(service.key)}
+                                    className={`px-4 py-3 cursor-pointer transition-all flex items-center justify-between group bg-white ${
+                                      isSelected 
+                                      ? 'bg-blue-50/80 ring-1 ring-inset ring-blue-200 z-10' 
+                                      : 'hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <div className="flex flex-col gap-0.5">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`text-sm font-bold uppercase ${isSelected ? 'text-blue-700' : 'text-slate-700'}`}>
+                                          {service.layanan}
+                                        </span>
+                                        {service.stok > 100 && (
+                                          <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">STOK MELIMPAH</span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                                        <span className="flex items-center gap-1 font-mono">
+                                          <Wallet size={10} /> Rp {service.harga.toLocaleString()}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <RefreshCcw size={10} /> Stok: {service.stok}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {isSelected ? (
+                                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-sm">
+                                        <CheckCircle2 size={14} />
+                                      </div>
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full border border-slate-200 group-hover:border-blue-400" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="p-8 text-center text-xs text-slate-400 italic">Layanan tidak ditemukan</div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-1.5">
@@ -898,96 +839,130 @@ export default function App() {
 
                 {/* Right Side */}
                 <div className="bg-white rounded-xl border border-[#e2e8f0] flex flex-col overflow-hidden shadow-sm">
-                  <div className="px-5 py-[15px] border-b border-[#e2e8f0] font-bold bg-[#fafafa] flex justify-between items-center">
-                    <span>Daftar Pesanan</span>
+                  <div className="px-5 py-[15px] border-b border-[#e2e8f0] font-bold bg-slate-50 flex justify-between items-center text-slate-800">
+                    <div className="flex items-center gap-2">
+                       <ShoppingCart size={18} className="text-blue-600" />
+                       <span>Aktivitas Pesanan</span>
+                    </div>
+                    <div className="text-[10px] uppercase font-bold text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-100">
+                      {activeOrders.length} Transaksi
+                    </div>
                   </div>
                   
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-[#fafafa] text-left border-b-2 border-[#e2e8f0]">
-                          <th className="p-3 text-[11px] uppercase text-[#64748b] font-bold tracking-wider">Layanan</th>
-                          <th className="p-3 text-[11px] uppercase text-[#64748b] font-bold tracking-wider">Nomor</th>
-                          <th className="p-3 text-[11px] uppercase text-[#64748b] font-bold tracking-wider">OTP</th>
-                          <th className="p-3 text-[11px] uppercase text-[#64748b] font-bold tracking-wider">Status</th>
-                          <th className="p-3 text-[11px] uppercase text-[#64748b] font-bold tracking-wider text-right">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#e2e8f0]">
-                        <AnimatePresence mode="popLayout" initial={false}>
-                          {activeOrders.map((order) => (
-                            <motion.tr 
-                              layout
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              key={order.order_id} 
-                              className="group hover:bg-[#f8fafc] transition-colors"
-                            >
-                              <td className="p-3">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="font-bold uppercase text-[12px]">{order.service_name}</span>
-                                  <span className="text-[10px] text-[#64748b] uppercase tracking-tighter">{order.country_name} • {order.operator}</span>
+                  <div className="p-3 space-y-2 max-h-[700px] overflow-y-auto custom-scrollbar bg-slate-50/20">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {activeOrders.map((order) => (
+                        <motion.div 
+                          layout
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          key={order.order_id} 
+                          className="bg-white rounded-lg border border-slate-200 p-2.5 shadow-sm hover:shadow-md transition-all group overflow-hidden relative"
+                        >
+                          {/* Accent bar for active status */}
+                          {order.status === 'active' && <div className="absolute top-0 left-0 bottom-0 w-1 bg-yellow-400" />}
+                          {order.status === 'completed' && <div className="absolute top-0 left-0 bottom-0 w-1 bg-green-500" />}
+
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-extrabold text-slate-800 text-[12px] uppercase tracking-tight truncate max-w-[150px]">{order.service_name}</span>
+                                  <span className={`text-[8px] font-black px-1 py-0.5 rounded uppercase ${
+                                    order.status === 'active' ? 'bg-yellow-100 text-yellow-700 animate-pulse' :
+                                    order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                    'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {order.status === 'active' ? 'Proses' : 
+                                     order.status === 'completed' ? 'Ok' : 'Gagal'}
+                                  </span>
                                 </div>
-                              </td>
-                              <td className="p-3">
-                                <div className="flex items-center gap-2 group/num cursor-pointer" onClick={() => copyToClipboard(order.number)}>
-                                  <span className="font-mono text-[13px] text-[#1e293b] font-bold">{order.number}</span>
-                                  <Copy size={12} className="text-[#94a3b8] opacity-0 group-hover/num:opacity-100 transition-opacity" />
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                                  <Globe size={10} />
+                                  <span className="uppercase">{order.country_name}</span>
+                                  <span className="mx-0.5">•</span>
+                                  <span className="font-mono text-[9px]">#{order.order_id}</span>
                                 </div>
-                              </td>
-                              <td className="p-3">
-                                {order.otp ? (
-                                  <div className="flex items-center gap-2 group/otp cursor-pointer" onClick={() => copyToClipboard(order.otp!)}>
-                                    <span className="font-mono text-[18px] text-[#3b82f6] font-bold tracking-[2px]">
-                                      {order.otp}
-                                    </span>
-                                    <Copy size={12} className="text-[#94a3b8] opacity-0 group-hover/otp:opacity-100 transition-opacity" />
-                                  </div>
-                                ) : (
-                                  <span className="font-mono text-[16px] text-[#cbd5e1] tracking-[2px]">------</span>
-                                )}
-                              </td>
-                              <td className="p-3">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                  order.status === 'active' ? 'bg-[#fef3c7] text-[#92400e]' :
-                                  order.status === 'completed' ? 'bg-[#d1fae5] text-[#065f46]' :
-                                  'bg-[#f1f5f9] text-[#64748b]'
-                                }`}>
-                                  {order.status === 'active' ? 'MENUNGGU SMS...' : 
-                                   order.status === 'completed' ? 'TERVERIFIKASI' : 'DIBATALKAN'}
-                                </span>
-                              </td>
-                              <td className="p-3 text-right">
+                              </div>
+                              <div className="flex items-center gap-1">
                                 {order.status === 'active' && (
-                                  <div className="flex items-center justify-end gap-1.5">
+                                  <>
                                     <button 
                                       onClick={() => checkOtp(order)}
-                                      className="p-1.5 bg-[#eff6ff] text-[#3b82f6] border border-[#bfdbfe] rounded hover:bg-[#3b82f6] hover:text-white"
+                                      className="p-1.5 bg-white text-blue-600 border border-slate-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                                      title="Refresh"
                                     >
                                       <RefreshCcw size={14} />
                                     </button>
                                     <button 
                                       onClick={() => cancelOrder(order)}
-                                      className="p-1.5 bg-red-50 text-red-600 border border-red-100 rounded hover:bg-red-600 hover:text-white"
+                                      className="p-1.5 bg-white text-red-500 border border-slate-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all"
+                                      title="Cancel"
                                     >
                                       <XCircle size={14} />
                                     </button>
-                                  </div>
+                                  </>
                                 )}
-                              </td>
-                            </motion.tr>
-                          ))}
-                        </AnimatePresence>
-                        {activeOrders.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="p-12 text-center text-[#94a3b8] italic text-sm">
-                              Tidak ada riwayat pesanan.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                                {order.status === 'completed' && <CheckCircle2 size={18} className="text-green-500" />}
+                                {order.status === 'cancelled' && <XCircle size={18} className="text-slate-200" />}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div 
+                                onClick={() => copyToClipboard(order.number)}
+                                className="flex flex-col bg-slate-50 p-1.5 rounded-lg border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors group/num"
+                              >
+                                <span className="text-[9px] text-slate-400 font-bold uppercase mb-1">Nomor</span>
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono font-black text-slate-700 text-[12px] tracking-tight">{order.number}</span>
+                                  <Copy size={10} className="text-slate-400" />
+                                </div>
+                              </div>
+
+                              <div 
+                                onClick={() => order.otp && copyToClipboard(order.otp)}
+                                className={`flex flex-col p-1.5 rounded-lg border transition-all ${
+                                  order.otp 
+                                  ? 'bg-blue-50 border-blue-100 text-blue-700 cursor-pointer hover:bg-blue-100' 
+                                  : 'bg-slate-50 border-slate-100 text-slate-300'
+                                }`}
+                              >
+                                <span className="text-[9px] font-bold uppercase mb-1">{order.otp ? 'OTP' : 'Menunggu'}</span>
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono font-black text-[14px] leading-none tracking-wider">
+                                    {order.otp || '------'}
+                                  </span>
+                                  {order.otp && <Copy size={10} className="text-blue-400" />}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Progress animation for active orders */}
+                          {order.status === 'active' && (
+                            <div className="mt-2 h-0.5 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ x: "-100%" }}
+                                animate={{ x: "100%" }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                                className="h-full w-1/3 bg-blue-500"
+                              />
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    
+                    {activeOrders.length === 0 && (
+                      <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
+                        <div className="p-4 bg-slate-50 rounded-full">
+                          <History size={32} className="text-slate-300" />
+                        </div>
+                        <p className="italic text-sm">Belum ada aktivitas pesanan hari ini.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

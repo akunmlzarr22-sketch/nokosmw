@@ -1,16 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-mw-purple: #8b5cf6;
-  --color-mw-orange: #f97316;
-  --color-mw-yellow: #fbbf24;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-@layer utilities {
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-[#8b5cf6] via-[#f97316] to-[#fbbf24];
+@layer base {
+  body {
+    @apply font-sans;
   }
-  .bg-mw-gradient {
-    @apply bg-linear-to-r from-[#8b5cf6] to-[#f97316];
-  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
 }

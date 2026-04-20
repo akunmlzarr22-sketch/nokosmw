@@ -1,6 +1,6 @@
 {
-  "name": "MW STORE",
-  "description": "Platform penyedia nomor virtual (Nokos) global terpercaya. MW STORE menyediakan akses OTP untuk berbagai layanan internasional dengan sistem transaksi otomatis.",
+  "name": "MWSTORE",
+  "description": "Platform penyedia nomor virtual (MWSTORE) global yang terintegrasi dengan JasaOTP. Beli nomor, terima kode OTP, dan kelola saldo dengan aman.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }
